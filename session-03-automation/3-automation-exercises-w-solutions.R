@@ -14,7 +14,6 @@ summarize_bills <- function(df) {
       max_bill_length = max(bill_length_mm, na.rm = TRUE)
     )
 }
-
 # Test
 summarize_bills(penguins_nested$data[[1]])
 

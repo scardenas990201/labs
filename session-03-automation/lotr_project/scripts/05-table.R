@@ -1,3 +1,5 @@
+
+
 ## import raw data
 lotr_dat <- read_tsv("./session-03-automation/lotr_project/data/raw/lotr_raw.tsv")
 
@@ -21,9 +23,10 @@ lotr_dat <- lotr_dat %>%
   arrange(Species, Film, Words) %>%
   # drop levels
   droplevels
-  
-# write data to file
-write_tsv(lotr_dat, file = "./session-03-automation/lotr_project/data/processed/lotr_clean.tsv")
 
-# Print message
-print("Data processed and saved.")
+
+lotr_dat_table <- lotr_dat %>% 
+  group_by(Species,Film) %>% 
+  summarise(words_spoken=sum(Words))
+
+write_tsv(lotr_dat_table, file = "./session-03-automation/lotr_project/outputs/tables/lotr_dat_table_revsca.tsv")
