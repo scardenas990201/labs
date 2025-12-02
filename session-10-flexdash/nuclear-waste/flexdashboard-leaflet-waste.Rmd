@@ -54,6 +54,9 @@ sites$campus <- ifelse(grepl("University", sites$site.name) |
                          grepl("Campus", sites$street_address), 1, 0)
 
 sites$campuscol <- ifelse(sites$campus == 1, "#c93434", "black")
+
+
+
 ```
 
 Column {data-width=650}

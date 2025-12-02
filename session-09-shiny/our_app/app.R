@@ -7,7 +7,8 @@ if (FALSE) {
 
 # Setup -------------------------------------------------------------------
 
-
+all_genres %>% 
+  
 # Set up handles to database tables on app start
 db <- dplyr::src_sqlite("movies.db")
 omdb <- dplyr::tbl(db, "omdb")
@@ -19,7 +20,7 @@ all_movies <- dplyr::inner_join(omdb, tomatoes, by = "ID") %>%
   dplyr::select(ID, imdbID, Title, Year, Rating_m = Rating.x, Runtime, Released,
                 Director, Writer, imdbRating, imdbVotes, Language, Country, Oscars,
                 Rating = Rating.y, Meter, Reviews, Fresh, Rotten, userMeter, userRating, userReviews,
-                BoxOffice, Production, Cast)
+                BoxOffice, Production, Cast, Genre)
 
 # Variables that can be put on the x and y axes
 axis_vars <- c(
@@ -64,6 +65,7 @@ ui <- fluidPage(
              sliderInput("boxoffice", "Dollars at Box Office (millions)",
                          0, 800, c(0, 800), step = 1),
              textInput("director", "Director name contains (e.g., Miyazaki)"),
+             textInput("Genre", "Genre name contains (e.g., Drama)"),
              textInput("cast", "Cast names contains (e.g. Tom Hanks)")
            ),
            
@@ -126,6 +128,13 @@ server <- function(input, output, session) {
       director <- paste0("%", input$director, "%")
       m <- m %>% filter(Director %like% director)
     }
+    if (!is.null(input$Genre) && input$Genre != "") {
+      # As our data is an SQL database, we need to use SQL LIKE syntax to match patterns in strings
+      # This works similarly to Regular Expressions, but with % as a wildcard for any number of characters
+      # Hint: for excercise 3 you can just copy this block of code and change it to match the inputted Genre.
+      Genre <- paste0("%", input$Genre, "%")
+      m <- m %>% filter(Director %like% Genre)
+    }
     # Optional: filter by cast member
     if (!is.null(input$cast) && input$cast != "") {
       cast <- paste0("%", input$cast, "%")
@@ -173,6 +182,7 @@ server <- function(input, output, session) {
         y = input$yvar,
         fill = "has_oscar",
         colour = "has_oscar",
+        size = "BoxOffice",
         text = "paste0(
         '<b>', Title, '</b><br>',
         'Year: ', Year, '<br>',
@@ -184,6 +194,7 @@ server <- function(input, output, session) {
       scale_fill_manual(values = c("Yes" = "orange", "No" = "gray"),name = "Won an Oscar") +
       scale_color_manual(values = c("Yes" = "orange", "No" = "gray"),guide = "none") +
       labs(
+        title =  paste("Graph",xvar_name,"vs",yvar_name),
         x = xvar_name,
         y = yvar_name
       ) +
@@ -206,3 +217,4 @@ server <- function(input, output, session) {
 # Compiling the App -------------------------------------------------------
 
 shinyApp(ui = ui, server = server)
+

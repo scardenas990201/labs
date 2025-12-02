@@ -171,6 +171,14 @@ b) Which airline has the most flights with unregistered planes?
 
 ```{r}
 
+
+flights |>
+  dplyr::anti_join(planes, by = "tailnum") |>
+  dplyr::count(carrier, sort = TRUE) |>
+
+  dplyr::left_join(airlines, by = "carrier")
+
+
 ```
 
 
@@ -304,7 +312,6 @@ It is actually fairly straightforward. You use the `dplyr::tbl()`function where 
 ```{r}
 # generate reference table from the database
 flights_db <- dplyr::tbl(con, "flights")
-flights_db 
 
 ## You will notice that there are some slight differences from our <tibble> or <data.frame> types (see "Source:" and "Database:")
 ```
@@ -391,6 +398,13 @@ dplyr::copy_to(
     c("year", "month", "day", "hour", "origin")
   )
 )
+
+
+glimpse(nycflights13::airports)
+glimpse(nycflights13::planes)
+glimpse(nycflights13::airlines)
+glimpse(nycflights13::weather)
+
 ```
 
 
@@ -408,6 +422,21 @@ b) Add the `airports` table to the database with the appropriate index.
 :::
 
 ```{r}
+# a) Inspect the airports dataset
+head(nycflights13::airports)
+# or
+dplyr::glimpse(nycflights13::airports)
+
+# b) Add the airports table with the appropriate index
+
+dplyr::copy_to(
+  dest = con, 
+  df = nycflights13::airports, 
+  name = "airports",
+  temporary = FALSE, 
+  indexes = "faa"
+)
+
 
 ```
 
@@ -428,13 +457,28 @@ The `join` syntax has its origin in SQL. Unsurprisingly, you can join tables wit
 ```{r}
 planes_db <-  dplyr::tbl(con, 'planes')
 
+glimpse(planes_db)
+glimpse(flights_db)
+
 dplyr::left_join(
   flights_db,
   planes_db |> dplyr::rename(year_built = year), # taking care of name ambiguity
   by = "tailnum" ## Important: Be specific about the joining column
-) |>
+) |> 
   dplyr::select(year, month, day, dep_time, arr_time, carrier, flight, tailnum,
          year_built, type, model) 
+
+
+flights_db %>%
+  left_join(
+    planes_db %>% rename(year_built = year),
+    by = "tailnum"
+  ) %>%
+  dplyr::select(
+    year, month, day, dep_time, arr_time, carrier, flight, tailnum,
+    year_built, type, model
+  )
+
 ```
 
 This should all feel very **familiar** right? `r emo::ji("grin")`
@@ -524,6 +568,13 @@ b) Collect the results into a local dataframe.
 
 ```{r}
 
+
+jan1_flights <- flights_db |>
+  dplyr::filter(month == 1, day == 1) |>
+  dplyr::left_join(airlines_db, by = "carrier") |>
+  dplyr::select(carrier, name, flight) 
+
+  
 ```
 
 

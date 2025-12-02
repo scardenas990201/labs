@@ -200,9 +200,12 @@ Once we have our scatter plot, adapt the code to:
 
 
 ```{r, figures-side, fig.show="hold",  warning=F}
-ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
+ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g, color=species)) +
   geom_point() + 
-  labs(title = "Basic plot")
+  labs(title = "Basic plot",
+       y = "Body Mass")
+
+View(penguins)
 ```
 
 ```{r}
@@ -269,8 +272,7 @@ We saw that the shape of the distribution is highly influenced by *how many bins
 Density plots are continuous alternatives to histograms that do not rely on bins. We will not cover details about the mechanics behind density plots and their estimation here. Just know that we can interpret the height of the density curve in a similar way to how we interpreted the height of the bars in a histogram: The higher the curve, the more observations we have at that specific value of the variable of interest. In this first example, we use the `geom_density()` function to create the density plot.
 
 ```{r, warning=F, message=F, fig.height=3}
-ggplot(df, aes(x = lifeExp)) +
-  geom_density()
+
 ```
 
 ---
@@ -330,14 +332,14 @@ Create a histogram showing the distribution of penguin body mass using the `peng
 1. Experiment with different geoms by replacing geom_histogram() with options like geom_density(), geom_bar(), or others.
 
 ```{r}
-# YOUR CODE HERE
 
 ```
 
 1. Now, look for a variable in the dataset that can be used to meaningfully group body mass. Use that variable to create a box plot or violin plot of body mass.
 
 ```{r}
-# YOUR CODE HERE
+penguin %>% 
+  ggplot(aes)-
 ```
 
 
@@ -670,7 +672,14 @@ ggplot(subset(diff07, continent == "Europe" & year == 2007),
 Create a scatter plot to explore the relationship between `flipper_length_mm` and `body_mass_g`. Then, color by a grouping variable (of your choice) and add linear trend lines.
 
 ```{r}
-# YOUR CODE HERE
+
+penguins %>% 
+  ggplot(aes(flipper_length_mm,body_mass_g,color=sex))+
+  geom_point()+
+  scale_color_brewer(palette = "Dark2")+
+  geom_smooth(method = lm, se = TRUE)+
+  theme_minimal()
+
 ```
 
 ---
@@ -964,7 +973,18 @@ Create a plot to compare the GDP per capita development of the BRICS countries (
 
 
 ```{r}
-# YOUR CODE HERE
+
+unique(df$country)
+
+df %>% 
+  filter(country %in% c("Brazil","India", "China", "South Africa")) %>%
+  ggplot(aes(x=year,y=gdpPercap, color=country))+
+  geom_line()+
+  geom_point()+
+  theme_minimal()
+ 
+  
+  
 
 ```
 

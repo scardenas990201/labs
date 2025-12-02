@@ -41,7 +41,7 @@ ggplot(penguins, aes(x = body_mass_g)) +
 # Box plot of body mass grouped by species
 ggplot(penguins, aes(x = species, y = body_mass_g)) +
   geom_boxplot(fill = "#FF6666") +
-  theme_minimal()
+  theme_minimal()m
 
 # Violin plot of body mass grouped by species
 ggplot(penguins, aes(x = species, y = body_mass_g)) +

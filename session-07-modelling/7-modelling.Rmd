@@ -121,12 +121,13 @@ pacman::p_load(kableExtra, # for nicely outputted HTML tables
                modelr, # tidy syntax modelling
                wesanderson) # color palette for ggplot2
 
+
 # load data
 life_expec_dat <- readr::read_csv("life_expectancy.csv") |> 
   janitor::clean_names() |> 
   dplyr::mutate(large = if_else(population > 50000000, 1, 0))  # pop size > 50M
 
-head(life_expec_dat)
+View(life_expec_dat)
 ```
 ------------------------------------------------------------------------
 
@@ -148,6 +149,7 @@ Running a model with a formula is straightforward. Note that we don't even have 
 
 ```{r}
 lm(life_expectancy ~ gdp, data = life_expec_dat)
+
 ```
 
 Note: Both sides of this equation go by many names. The left-hand side, often written as y, may be called the dependent variable, response variable, or target variable, depending on context.The right-hand side, often written as X, may be referred to as the independent variables, explanatory variables, or regressors. These terms have subtle differences in meaning depending on the context, but for our purposes today it’s enough to know that they all refer to one of the two sides of a regression equation.
@@ -179,6 +181,7 @@ Formulas are generally straightforward to work with. To make things clearer and 
 ```{r}
 formula_string <- paste("life_expectancy", "~ gdp")
 formula_string
+
 ```
 
 **Step 2:** Transform the string into R's `formula` class. Only then will your modeling function accept it as input.
@@ -194,7 +197,6 @@ Here we can see that the formula we created above is identical to doing it direc
 reg1 <- lm(formula, data = life_expec_dat) 
 reg2 <- lm(life_expectancy ~ gdp, data = life_expec_dat)
 
-reg1$coefficients == reg2$coefficients
 ```
 
 :::{.alert-info .pad-box}
@@ -208,7 +210,27 @@ Using the two-step approach, create formulas that perform the following regressi
 - Regress `life_expectancy` on `gdp`, the square of `gdp` and the log of `population`
 
 ```{r, echo= FALSE}
-# your code here
+  
+  # 1.
+formula_string1 <- paste ("life_expectancy", "~ gdp + population + alcohol")
+formula1 <- as.formula(formula_string1)
+reg1 <- lm(formula1, data = life_expec_dat)
+summary(reg1)
+
+# 2.
+formula_string2 <- paste("life_expectancy", "~ gdp * population + alcohol")
+formula2 <- as.formula(formula_string2)
+reg2 <- lm(formula2, data = life_expec_dat)
+summary(reg2)
+
+# 3.
+formula_string3 <- paste("life_expectancy", "~ gdp + I(gdp^2) + log(population)")
+# Same as formula_string3 <- "life_expectancy ~ gdp + I(gdp^2) + I(log(population))". As log() is a function, it doesn't necessarily need I().
+formula3 <- as.formula(formula_string3)
+reg3 <- lm(formula3, data = life_expec_dat)
+summary(reg3)
+nrow(life_expec_dat)
+glimpse(life_expec_dat)
 ```
 :::
 
@@ -222,14 +244,18 @@ Often, the modelling process requires you to run the same specification with **m
 
 ```{r}
 # function to include different y variables
-lm_fun_iter_y <-  function(dep_var) {
+lm_fun_iter_y  <-  function(dep_var) {
   lm(as.formula(paste(dep_var, "~ gdp")), data = life_expec_dat)
 }
+
+
+lm_fun_iter_y("year")
 
 # function to include different x variables 
 lm_fun_iter_x <- function(indep_var) {
   lm(as.formula(paste("life_expectancy ~", paste(indep_var, collapse = "+"))), data = life_expec_dat)
 }
+
 ```
 
 `r colorise("Notice:", "red")` Considering your model will likely include many independent variables, it's unlikely that you'll run a simple bivariate regression. Therefore, we use a nested paste function above that combines (with `collapse()`) all independent variables contained in a character vector with `+`.
@@ -242,13 +268,15 @@ vars <- life_expec_dat |>
   dplyr::select(-c("life_expectancy", "country")) |> 
   names()
 
-vars
 
 # run a bivariate model for each column
 biv_model_out <-  vars |>
   purrr::map(lm_fun_iter_x)
 
-biv_model_out
+biv_model_out <- vars %>% 
+  purrr::map(lm_fun_iter_x)
+
+
 ```
 
 This returns output from all of the models that you've just run. Given that there are now quite a few models, it might be a good idea to keep the names of the independent variables that you feed into the model. You can do this with `purrr::set_names()`.
@@ -258,6 +286,7 @@ This returns output from all of the models that you've just run. Given that ther
 biv_model_out_w_names <-  vars |>
   purrr::set_names() |> 
   purrr::map(lm_fun_iter_x)
+
 
 biv_model_out_w_names$year # we can now easily index independent vars
 ```
@@ -277,12 +306,16 @@ combinations <-
   unlist() |> # pull out of list structure
   sum() # compute sum
 
+
+
 combinations
 ```
 
 **Step 2**: Write a function that can run all possible combinations in one go:
 
 ```{r}
+
+
 combn_models <- function(depvar, covars, data) {
   
   # initialize empty list
@@ -324,6 +357,9 @@ multiv_model_out <- combn_models(depvar = depvar, covars = covars, data = life_e
 
 # check whether we have the correct number of models
 length(multiv_model_out)
+
+
+
 ```
 
 :::{.alert-danger .pad-box}
@@ -331,9 +367,13 @@ length(multiv_model_out)
 Look at the `multiv_model_out` object that you have just created. Try to get a sense of the structure of the output. Pick three different models and inspect their output using the `summary()` function. Consider which model you think is "best" and why.
 
 ```{r, echo= FALSE}
-# your code here
+
+summary(multiv_model_out[[10]])
+summary(multiv_model_out[[20]])
+summary(multiv_model_out[[30]])
 ```
 :::
+
 
 As you can see, the function introduced in the lecture is quite powerful, but it is by no means the only option for testing multiple model specifications. Depending on the type of analysis that you plan to perform, certain R packages enable you run many different combinations of regression models with just a few lines of code. For example, the we can perform [multiple estimations with the `fixest` package](https://cran.r-project.org/web/packages/fixest/vignettes/multiple_estimations.html).
 
@@ -357,6 +397,16 @@ specs <- specr::setup(
   subsets = as.list(distinct(life_expec_dat, status)) # specify subgroup
 )
 
+
+specs <-  specr::setup(
+  data= life_expec_dat,
+  y = c("life_expectancy"),
+  x = c("gdp", "log(gdp)", "I(gdp^2)"),
+  model = c("lm", "glm"),
+  controls = c("population", "alcohol", "bmi"),
+  subsets = as.list(distinct(life_expec_dat,status))
+)
+
 summary(specs, rows = 20)
 ```
 
@@ -365,6 +415,7 @@ summary(specs, rows = 20)
 ```{r cache =TRUE}
 # run specification curve analysis
 results <- specr::specr(specs)
+
 ```
 
 **Step 3**: Inspect the specification curve to understand how robust your findings are to different analytical choices.
@@ -431,7 +482,6 @@ life_expec_dat_stand <- life_expec_dat_stand |>
                 gdp_squared = effectsize::standardize(gdp_squared),
                 log_gdp = effectsize::standardize(log_gdp)
   ) #Then we standardise all three
-                
                 
 
 # specify reasonable model "ingredients"
@@ -516,7 +566,22 @@ multiv_model_out_broom <- purrr::map_dfr(multiv_model_out[29:31], # the model ob
                                          broom::tidy, # the function to iterate with
                                          .id = "model_type") # id column
 
-multiv_model_out_broom
+
+multiv_model_out_broom <- purrr::map_dfr (multiv_model_out[29:31],
+                                          broom::tidy,
+                                          .id= "model_type")
+
+
+
+
+intercepts <- multiv_model_out_broom %>%
+  dplyr::filter(str_detect(term, "\\(Intercept\\)")) %>%
+  dplyr::select(term, estimate)
+
+
+
+
+
 ```
 
 Now that we have multiple model outputs in a format that we can work with, it is time to start thinking about visualizing our results. You can plot the residuals, the goodness of fit statistics etc. Similarly, you could also use `broom::glance()` to provide some robustness statistics or descriptive tables.
@@ -566,7 +631,6 @@ model_table <- modelsummary::modelsummary(multiv_model_out[29:31],
                                           statistic = "conf.int",
                                           coef_omit = "Intercept",
                                           escape = FALSE) 
-model_table
 ```
 
 Wouldn't it look more professional if our **coefficients began with capital letter**? And how about we get rid of some of the bloated goodness of fit statistics?
@@ -609,7 +673,28 @@ Our implementation of `modelsummary` above is good, but it can be improved furth
 
 
 ```{r, echo= FALSE}
+mod_table <- modelsummary::modelsummary(multiv_model_out[29:31], 
+                                        output = "kableExtra",
+                                        fmt = fmt_significant(1),  # 2 significant digits instead of fixed decimal places
+                                        estimate  = "{estimate}",
+                                        statistic = "conf.int",
+                                        coef_omit = "Intercept",
+                                        coef_rename=c("gdp"="Gdp", 
+                                                      "bmi"="Avg. BMI", 
+                                                      "alcohol" = "Alcohol Consum.",
+                                                      "hiv_aids"= "HIV cases", 
+                                                      "percentage_expenditure" = "Health Expenditure (% of GDP)",
+                                                      "life_expectancy" = "Life Expectancy"),
+                                        gof_omit = 'DF|Deviance|Log.Lik|AIC|BIC',
+                                        title = 'An Improved Regression Table',
+                                        notes = "Data sourced from the WHO via (https://www.kaggle.com/kumarajarshi/life-expectancy-who)",
+                                        escape = FALSE) |> 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = F, fixed_thead = T) |> 
+  row_spec(3, color = 'red') |>
+  row_spec(5, background = 'lightblue') # These shoudl be changed based on your own preferences.
 
+
+  mod_table
 ```  
 :::
 ---
@@ -623,6 +708,9 @@ Again, `modelsummary` provides a very accessible function for this: `modelplot()
 ```{r, fig.align='center', echo=T, out.width = "70%"}
 # plot 
 modelsummary::modelplot(multiv_model_out[29:31], coef_omit = "Intercept") 
+
+
+
 ```
 
 Now we just need to customize the plot to our liking:

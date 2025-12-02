@@ -14,22 +14,77 @@ library(rnaturalearth)
 library(dplyr)
 library(sf)
 library(shiny)
+pacman::p_load(gapminder)
 
-# Color palette
-pal <- colorNumeric("YlOrRd", domain = NULL)
 
 # Load African country boundaries
 africa <- ne_countries(continent = "Africa", returnclass = "sf")
+
+# Compute min and max life expectancy for Africa (all years)
+min_max <- gapminder %>% 
+  filter(continent == "Africa") %>% 
+  summarise(
+    min = min(lifeExp, na.rm = TRUE),
+    max = max(lifeExp, na.rm = TRUE)
+  )
+
+# Color palette with fixed scale using min/max
+pal <- colorNumeric(
+  palette = "YlOrRd",
+  domain  = c(min_max$min, min_max$max)
+)
 ```
 
 
 
-### African Countries 
+
+
+Column {.sidebar}
+-----------------
+
 ```{r}
-# Plot 
-leaflet(africa) |>
-  addTiles() |>
-  addPolygons()
+
+selectInput(
+inputId = "year",
+label   = "Select year:",
+choices = sort(unique(gapminder$year)),
+selected = 2007
+)
+
+
 ```
 
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+```{r}
+
+
+renderLeaflet({
+
+
+
+gapminder_df <- gapminder %>%
+filter(continent == "Africa", year == input$year)
+
+
+africa_data <- africa %>%
+left_join(gapminder_df, by = c("name" = "country"))
+
+leaflet(africa_data) %>%
+  addTiles() %>%
+  addPolygons( fillColor    = ~pal(lifeExp),
+               color        = "white",
+               weight       = 1,
+               fillOpacity  = 0.8,
+               stroke       = TRUE) %>%
+addLegend(
+pal      = pal,
+values   = ~lifeExp,
+title    = "Life Expectancy",
+position = "bottomleft")})
+
+
+```
 
